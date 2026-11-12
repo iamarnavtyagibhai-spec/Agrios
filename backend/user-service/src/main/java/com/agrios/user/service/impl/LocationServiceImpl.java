@@ -22,7 +22,9 @@ public class LocationServiceImpl implements LocationService {
 
     private final List<DistrictResponse> districts = new ArrayList<>();
     private final Map<String, List<TehsilResponse>> tehsilsByDistrict = new HashMap<>();
+    private final List<TehsilResponse> allTehsils = new ArrayList<>();
     private final Map<String, List<BlockResponse>> blocksByDistrict = new HashMap<>();
+    private final List<BlockResponse> allBlocks = new ArrayList<>();
     private final Map<String, List<VillageResponse>> villagesByTehsil = new HashMap<>();
     private final List<VillageResponse> allVillages = new ArrayList<>();
 
@@ -60,8 +62,9 @@ public class LocationServiceImpl implements LocationService {
                 String[] parts = line.split(",");
                 if (parts.length >= 3) {
                     String districtCode = clean(parts[0]);
-                    tehsilsByDistrict.computeIfAbsent(districtCode, k -> new ArrayList<>())
-                            .add(new TehsilResponse(districtCode, clean(parts[1]), clean(parts[2])));
+                    TehsilResponse tehsil = new TehsilResponse(districtCode, clean(parts[1]), clean(parts[2]));
+                    tehsilsByDistrict.computeIfAbsent(districtCode, k -> new ArrayList<>()).add(tehsil);
+                    allTehsils.add(tehsil);
                 }
             }
         } catch (Exception e) {
@@ -77,8 +80,9 @@ public class LocationServiceImpl implements LocationService {
                 String[] parts = line.split(",");
                 if (parts.length >= 3) {
                     String districtCode = clean(parts[0]);
-                    blocksByDistrict.computeIfAbsent(districtCode, k -> new ArrayList<>())
-                            .add(new BlockResponse(districtCode, clean(parts[1]), clean(parts[2])));
+                    BlockResponse block = new BlockResponse(districtCode, clean(parts[1]), clean(parts[2]));
+                    blocksByDistrict.computeIfAbsent(districtCode, k -> new ArrayList<>()).add(block);
+                    allBlocks.add(block);
                 }
             }
         } catch (Exception e) {
@@ -114,13 +118,63 @@ public class LocationServiceImpl implements LocationService {
     }
 
     @Override
+    public List<DistrictResponse> searchDistricts(String name, int limit) {
+        if (name == null || name.trim().isEmpty()) {
+            return Collections.emptyList();
+        }
+        String query = name.trim().toLowerCase();
+        int maxResults = limit > 0 ? Math.min(limit, 100) : 20;
+
+        return districts.stream()
+                .filter(d -> d.getName().toLowerCase().contains(query))
+                .limit(maxResults)
+                .toList();
+    }
+
+    @Override
     public List<TehsilResponse> getTehsilsByDistrict(String districtCode) {
         return tehsilsByDistrict.getOrDefault(districtCode, Collections.emptyList());
     }
 
     @Override
+    public List<TehsilResponse> searchTehsils(String name, String districtCode, int limit) {
+        if (name == null || name.trim().isEmpty()) {
+            return Collections.emptyList();
+        }
+        String query = name.trim().toLowerCase();
+        int maxResults = limit > 0 ? Math.min(limit, 100) : 20;
+
+        List<TehsilResponse> source = (districtCode != null && !districtCode.trim().isEmpty())
+                ? tehsilsByDistrict.getOrDefault(districtCode.trim(), Collections.emptyList())
+                : allTehsils;
+
+        return source.stream()
+                .filter(t -> t.getName().toLowerCase().contains(query))
+                .limit(maxResults)
+                .toList();
+    }
+
+    @Override
     public List<BlockResponse> getBlocksByDistrict(String districtCode) {
         return blocksByDistrict.getOrDefault(districtCode, Collections.emptyList());
+    }
+
+    @Override
+    public List<BlockResponse> searchBlocks(String name, String districtCode, int limit) {
+        if (name == null || name.trim().isEmpty()) {
+            return Collections.emptyList();
+        }
+        String query = name.trim().toLowerCase();
+        int maxResults = limit > 0 ? Math.min(limit, 100) : 20;
+
+        List<BlockResponse> source = (districtCode != null && !districtCode.trim().isEmpty())
+                ? blocksByDistrict.getOrDefault(districtCode.trim(), Collections.emptyList())
+                : allBlocks;
+
+        return source.stream()
+                .filter(b -> b.getName().toLowerCase().contains(query))
+                .limit(maxResults)
+                .toList();
     }
 
     @Override
