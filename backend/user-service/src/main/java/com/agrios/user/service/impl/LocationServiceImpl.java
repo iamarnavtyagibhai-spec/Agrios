@@ -24,6 +24,7 @@ public class LocationServiceImpl implements LocationService {
     private final Map<String, List<TehsilResponse>> tehsilsByDistrict = new HashMap<>();
     private final Map<String, List<BlockResponse>> blocksByDistrict = new HashMap<>();
     private final Map<String, List<VillageResponse>> villagesByTehsil = new HashMap<>();
+    private final List<VillageResponse> allVillages = new ArrayList<>();
 
     @PostConstruct
     public void init() {
@@ -93,8 +94,9 @@ public class LocationServiceImpl implements LocationService {
                 String[] parts = line.split(",");
                 if (parts.length >= 4) {
                     String tehsilCode = clean(parts[1]);
-                    villagesByTehsil.computeIfAbsent(tehsilCode, k -> new ArrayList<>())
-                            .add(new VillageResponse(clean(parts[0]), tehsilCode, clean(parts[2]), clean(parts[3])));
+                    VillageResponse village = new VillageResponse(clean(parts[0]), tehsilCode, clean(parts[2]), clean(parts[3]));
+                    villagesByTehsil.computeIfAbsent(tehsilCode, k -> new ArrayList<>()).add(village);
+                    allVillages.add(village);
                 }
             }
         } catch (Exception e) {
@@ -124,6 +126,24 @@ public class LocationServiceImpl implements LocationService {
     @Override
     public List<VillageResponse> getVillagesByTehsil(String tehsilCode) {
         return villagesByTehsil.getOrDefault(tehsilCode, Collections.emptyList());
+    }
+
+    @Override
+    public List<VillageResponse> searchVillages(String name, String tehsilCode, int limit) {
+        if (name == null || name.trim().isEmpty()) {
+            return Collections.emptyList();
+        }
+        String query = name.trim().toLowerCase();
+        int maxResults = limit > 0 ? Math.min(limit, 100) : 20;
+
+        List<VillageResponse> source = (tehsilCode != null && !tehsilCode.trim().isEmpty())
+                ? villagesByTehsil.getOrDefault(tehsilCode.trim(), Collections.emptyList())
+                : allVillages;
+
+        return source.stream()
+                .filter(v -> v.getName().toLowerCase().contains(query))
+                .limit(maxResults)
+                .toList();
     }
 }
 

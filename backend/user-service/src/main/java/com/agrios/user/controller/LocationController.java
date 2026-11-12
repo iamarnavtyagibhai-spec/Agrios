@@ -42,5 +42,14 @@ public class LocationController {
     public ResponseEntity<List<VillageResponse>> getVillages(@RequestParam String tehsilCode) {
         return ResponseEntity.ok(locationService.getVillagesByTehsil(tehsilCode));
     }
+
+    // 5. Search villages by name (e.g. ?name=Rampur or ?name=Ram&tehsilCode=766)
+    @GetMapping("/villages/search")
+    public ResponseEntity<List<VillageResponse>> searchVillages(
+            @RequestParam String name,
+            @RequestParam(required = false) String tehsilCode,
+            @RequestParam(defaultValue = "20") int limit) {
+        return ResponseEntity.ok(locationService.searchVillages(name, tehsilCode, limit));
+    }
 }
 

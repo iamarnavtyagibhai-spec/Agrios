@@ -16,5 +16,7 @@ public interface LocationService {
     List<BlockResponse> getBlocksByDistrict(String districtCode);
 
     List<VillageResponse> getVillagesByTehsil(String tehsilCode);
+
+    List<VillageResponse> searchVillages(String name, String tehsilCode, int limit);
 }
 
